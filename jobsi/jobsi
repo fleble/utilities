@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if [ ! -z $1 ]; then
+  regex=$1
+else
+  regex=".*"
+fi
+
+continu="1"
+
+echo '  PID TTY          TIME CMD'
+while [ $continu = "1" ]; do
+  text=`ps | grep -vE ".*(bash|ps|jobsi|grep|TIME CMD).*" | grep -E "${regex}"`
+  N=0
+  for t in $text; do ((N++)); done
+  N=$((N / 4))
+
+  Nrep=$((N+1))
+  if [ $N -ge 1 ]; then
+    echo -ne "\r$text"
+    echo -e "                                                                \r"
+    #for ((dum=0; dum<Ndummy; dum++)); do echo ""; done
+    sleep 1
+    echo -e "\033[${Nrep}A"
+    for ((i=1 ; i<Nrep ; i++)); do
+      echo -e "\r                                                            \r"
+    done
+    echo -e "\033[${Nrep}A"
+  fi
+done
+
