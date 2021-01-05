@@ -1,0 +1,4 @@
+#!/bin/bash
+
+r=${1}00
+display -resize $r $2
