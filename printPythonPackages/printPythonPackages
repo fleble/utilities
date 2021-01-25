@@ -1,13 +1,6 @@
 #!/bin/bash
 
+arguments=$@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-if [ ! -z $1 ]; then
-  if [ ! -f $1 ]; then
-    echo "$1 does not point to a valid python command"
-  else
-    $1 ${DIR}/printPythonPackages.py
-  fi
-else
-  python ${DIR}/printPythonPackages.py
-fi
+python ${DIR}/printPythonPackages.py ${arguments}
