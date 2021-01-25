@@ -2,6 +2,21 @@ import uproot
 import argparse
 
 
+def list2str(L, strForConcatenation=""):
+    """
+    Takes a list of elements convertible to str and optionally a string.
+    Returns the concatenation of elements in the list separated by the optional string.
+
+    """
+
+    if len(L)==0:
+        return("")
+    else:
+        s = L[0]
+        for el in L[1:]: s = s + strForConcatenation + str(el)
+        return(s)
+
+
 def getType(fullType):
     return(str(fullType).split("'")[1].split(".")[-1])
 
@@ -19,6 +34,16 @@ if (__name__ == "__main__"):
         default=2,
         help="Depth to ls"
         )
+    parser.add_argument(
+        "-nb", "--nobold",
+        help="Do not use bold",
+        action="store_true"
+        )
+    parser.add_argument(
+        "-nel", "--noemptyline",
+        help="No empty lines",
+        action="store_true"
+        )
 
 
     args = parser.parse_args()
@@ -28,10 +53,17 @@ if (__name__ == "__main__"):
 
     file_ = uproot.open(filename)
 
+    if args.noemptyline: newline = ""
+    else: newline = "\n"
+
     if depth>0 and hasattr(file_, "keys"):
         for in1 in file_.keys():
             type_ = getType(type(file_[in1]))
-            print( "\033[1m\n" + type_ + "\t" + in1.decode("utf-8") + ":\033[0m")
+            element = list2str(in1.decode("utf-8").split(";")[:-1])
+            if args.nobold:
+                print(newline + type_ + "\t" + element )
+            else:
+                print("\033[1m" + newline + type_ + "\t" + element + "\033[0m")
             if depth>1:
                 f1 = file_[in1]
                 if hasattr(f1, "keys"):
