@@ -25,6 +25,11 @@ if (__name__ == "__main__"):
         help="ROOT files separated by a comma \
               or txt file with list of ROOT files"
         )
+    parser.add_argument(
+        "-hr", "--humanReadable",
+        action="store_true",
+        help="Number of events in a human readable format"
+        )
 
     args = parser.parse_args()
 
@@ -43,5 +48,19 @@ if (__name__ == "__main__"):
         file_ = uproot.open(fileName)
         nEvts += len(file_["Events"])
 
-    print(nEvts)
+    if args.humanReadable:
+        if nEvts < 1e3:
+            nEvtsStr = str(nEvts)
+        elif nEvts>= 1e3 and nEvts<1e6:
+            nEvtsStr = str(int(nEvts//1e3)) + "k"
+        elif nEvts>= 1e6 and nEvts<1e9:
+            nEvtsStr = str(int(nEvts//1e6)) + "M"
+        elif nEvts>= 1e9 and nEvts<1e12:
+            nEvtsStr = str(int(nEvts//1e9)) + "G"
+        else:
+            nEvtsStr = str(int(nEvts//1e12)) + "T"
+    else:
+        nEvtsStr = str(nEvts)
+
+    print(nEvtsStr)
 
