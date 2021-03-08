@@ -1,4 +1,4 @@
-import uproot
+import uproot3
 import argparse
 
 
@@ -51,31 +51,39 @@ if (__name__ == "__main__"):
     filename = args.file
     depth = int(args.depth)
 
-    file_ = uproot.open(filename)
+    file_ = uproot3.open(filename)
 
     if args.noemptyline: newline = ""
     else: newline = "\n"
 
     if depth>0 and hasattr(file_, "keys"):
         for in1 in file_.keys():
-            type_ = getType(type(file_[in1]))
-            element = list2str(in1.decode("utf-8").split(";")[:-1])
-            if args.nobold:
-                print(newline + type_ + "\t" + element )
+            in1 = in1.decode("utf-8")
+            f1 = file_[in1]
+            type_ = getType(type(f1))
+            element = list2str(in1.split(";")[:-1])
+            if type_ == "TTree":
+                k0 = list(f1.keys())[0]
+                nevts = len(f1[k0])
+                nevtsStr = " (%d events)" %nevts
             else:
-                print("\033[1m" + newline + type_ + "\t" + element + "\033[0m")
+                nevtsStr = ""
+            if args.nobold:
+                print(newline + type_ + "\t" + element + nevtsStr )
+            else:
+                print("\033[1m" + newline + type_ + "\t" + element + nevtsStr + "\033[0m")
             if depth>1:
-                f1 = file_[in1]
                 if hasattr(f1, "keys"):
                     for in2 in f1.keys():
+                        in2 = in2.decode("utf-8")
                         type_ = getType(type(f1[in2]))
-                        #type_ = getType(type(file_[in1][in2]))
-                        print(4*" " + type_ + "\t" + in2.decode("utf-8"))
+                        print(4*" " + type_ + "\t" + in2)
                         if depth>2:
                             f2 = f1[in2]
                             if hasattr(f2, "keys"):
                                 for in3 in f2.keys():
-                                    print(8*" " + in3.decode("utf-8"))
+                                    in3 = in3.decode("utf-8")
+                                    print(8*" " + in3)
 
 
 
