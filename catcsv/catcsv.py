@@ -39,6 +39,10 @@ if __name__ == "__main__":
         default=","
         )
     parser.add_argument(
+        "-n", "--nrows",
+        help="Number of rows to display"
+        )
+    parser.add_argument(
         "-nc", "--noColumns",
         help="csv file does not have column names in 1st row",
         action="store_true"
@@ -98,5 +102,10 @@ if __name__ == "__main__":
         idx0 = 1
     else: idx0 = 0
 
-    for row in csvData[idx0:]: 
+    if not args.nrows:
+        csvToPrint = csvData[idx0:]
+    else:
+        csvToPrint = csvData[idx0:int(args.nrows)]
+
+    for row in csvToPrint:
         printRow(row, maxLen, nCols)
