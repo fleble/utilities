@@ -46,7 +46,7 @@ if (__name__ == "__main__"):
     nEvts = 0
     for fileName in rootFiles:
         file_ = uproot.open(fileName)
-        nEvts += len(file_["Events"])
+        nEvts += len(file_["Events"].arrays())
 
     if args.humanReadable:
         if nEvts < 1e3:
