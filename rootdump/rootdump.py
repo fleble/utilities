@@ -68,15 +68,8 @@ if (__name__ == "__main__"):
     data = uproot.open(args.file)
 
     ## Read the branch data
-    # Get the directories name that leads to the branch
-    branchDirectories = args.branch.split("/")
-
-    # Go up the tree till the final branch by looping over the directories name
-    for directory in branchDirectories:
-        data = data[directory]
-
-    # Read the branch object
-    branch = data.arrays()
+    # Get branch data as an ak array
+    branch = data[args.branch].arrays()
 
     # Check if there is only 1 branch
     fields = branch.fields
