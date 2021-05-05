@@ -27,12 +27,13 @@ if (__name__ == "__main__"):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-f", "--file",
-        help="File to ls"
+        help="File to ls",
+        required=True,
         )
     parser.add_argument(
         "-d", "--depth",
+        help="Depth to ls",
         default=2,
-        help="Depth to ls"
         )
     parser.add_argument(
         "-nb", "--nobold",
@@ -65,7 +66,9 @@ if (__name__ == "__main__"):
             if type_ == "TTree":
                 k0 = list(f1.keys())[0]
                 nevts = len(f1[k0])
-                nevtsStr = " (%d events)" %nevts
+                if element == "Events": name = "events"
+                else: name = "entries"
+                nevtsStr = " (%d %s)" %(nevts, name)
             else:
                 nevtsStr = ""
             if args.nobold:
