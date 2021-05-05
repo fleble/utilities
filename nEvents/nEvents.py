@@ -6,8 +6,8 @@ if (__name__ == "__main__"):
     """
     Return the number of events in a list of ROOT files.
     Examples:
-    $ python nEvents file1.root,file2.root
-    $ python nEvents list.txt
+    $ python nEvents -f file1.root,file2.root
+    $ python nEvents -f list.txt
     where
     $ cat list.txt
     file1.root
@@ -23,12 +23,17 @@ if (__name__ == "__main__"):
     parser.add_argument(
         "-f", "--files",
         help="ROOT files separated by a comma \
-              or txt file with list of ROOT files"
+              or txt file with list of ROOT files.",
         )
     parser.add_argument(
         "-hr", "--humanReadable",
         action="store_true",
-        help="Number of events in a human readable format"
+        help="Number of events in a human readable format.",
+        )
+    parser.add_argument(
+        "-t", "--ttree",
+        help="Name of the events TTree (or the TTree for which to get size). Default=Events.",
+        default="Events",
         )
 
     args = parser.parse_args()
@@ -46,8 +51,11 @@ if (__name__ == "__main__"):
     nEvts = 0
     for fileName in rootFiles:
         file_ = uproot.open(fileName)
-        nEvts += len(file_["Events"].arrays())
+        events = file_[args.ttree]
+        f0 = events.keys()[0]
+        nEvts += events[f0].num_entries
 
+    # Human readable output
     if args.humanReadable:
         if nEvts < 1e3:
             nEvtsStr = str(nEvts)
