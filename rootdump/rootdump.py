@@ -59,6 +59,10 @@ if (__name__ == "__main__"):
         help="Print as table: entry number | value",
         action="store_true",
         )
+    parser.add_argument(
+        "-a", "--apply",
+        help="Apply a function on the array (e.g. sum)",
+        )
 
 
     ## Parse arguments
@@ -92,7 +96,14 @@ if (__name__ == "__main__"):
     if args.index:
         branch = branch[make_slice(args.index)]
 
-    print("Content of branch %s:" %(args.branch))
+    # Apply a function over the array
+    if args.apply:
+        branch = eval(args.apply+"(branch)")
+
+    if not args.apply:
+        print("Content of branch %s:" %(args.branch))
+    else:
+        print(args.apply+"(" + args.branch + "):")
 
     if not args.number:
         print(branch)
