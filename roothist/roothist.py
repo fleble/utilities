@@ -4,6 +4,68 @@ import uproot
 import numpy
 import awkward as ak
 import matplotlib.pyplot as plt
+import ROOT
+
+
+# Colors
+colors = [ROOT.kRed, ROOT.kBlue, ROOT.kGreen, ROOT.kBlack]
+linestyles = [ 4, 5, 6, 1 ]
+
+ROOT.gROOT.SetBatch()
+
+# Define plot style
+ROOT.gStyle.SetOptStat(0000)
+ROOT.gStyle.SetOptFit(0000)
+
+ROOT.gStyle.SetCanvasBorderMode(0)
+ROOT.gStyle.SetCanvasColor(ROOT.kWhite)
+ROOT.gStyle.SetCanvasDefH(600)
+ROOT.gStyle.SetCanvasDefW(700)
+ROOT.gStyle.SetCanvasDefX(0)
+ROOT.gStyle.SetCanvasDefY(0)
+
+ROOT.gStyle.SetPadTopMargin(0.08)
+ROOT.gStyle.SetPadBottomMargin(0.15)
+ROOT.gStyle.SetPadLeftMargin(0.13)
+ROOT.gStyle.SetPadRightMargin(0.02)
+
+ROOT.gStyle.SetHistLineColor(1)
+ROOT.gStyle.SetHistLineStyle(0)
+ROOT.gStyle.SetHistLineWidth(1)
+ROOT.gStyle.SetEndErrorSize(2)
+ROOT.gStyle.SetMarkerStyle(20)
+ROOT.gStyle.SetMarkerSize(0.9)
+
+ROOT.gStyle.SetOptTitle(0)
+ROOT.gStyle.SetTitleFont(42)
+ROOT.gStyle.SetTitleColor(1)
+ROOT.gStyle.SetTitleTextColor(1)
+ROOT.gStyle.SetTitleFillColor(10)
+ROOT.gStyle.SetTitleFontSize(0.05)
+
+ROOT.gStyle.SetTitleColor(1, "XYZ")
+ROOT.gStyle.SetTitleFont(42, "XYZ")
+ROOT.gStyle.SetTitleSize(0.05, "XYZ")
+ROOT.gStyle.SetTitleXOffset(1.00)
+ROOT.gStyle.SetTitleYOffset(0.90)
+
+ROOT.gStyle.SetLabelColor(1, "XYZ")
+ROOT.gStyle.SetLabelFont(42, "XYZ")
+ROOT.gStyle.SetLabelOffset(0.007, "XYZ")
+ROOT.gStyle.SetLabelSize(0.04, "XYZ")
+
+ROOT.gStyle.SetAxisColor(1, "XYZ")
+ROOT.gStyle.SetStripDecimals(True)
+ROOT.gStyle.SetTickLength(0.03, "XYZ")
+ROOT.gStyle.SetNdivisions(510, "XYZ")
+ROOT.gStyle.SetPadTickX(1)
+ROOT.gStyle.SetPadTickY(1)
+
+ROOT.gStyle.SetPaperSize(20., 20.)
+ROOT.gStyle.SetHatchesLineWidth(5)
+ROOT.gStyle.SetHatchesSpacing(0.05)
+
+ROOT.TGaxis.SetExponentOffset(-0.08, 0.01, "Y")
 
 
 def make_slice(sliceText):
@@ -35,13 +97,18 @@ if (__name__ == "__main__"):
     ## Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "-o", "--output",
+        default="tmp.pdf",
+        help="Output file name (default=tmp.pdf)",
+        )
+    parser.add_argument(
         "-f", "--file",
-        help="File for which to make histogram",
+        help="File for which to make histogram (for multiple histograms from different files, separate files by a comma ',')",
         required=True,
         )
     parser.add_argument(
         "-b", "--branch",
-        help="Branch to histogram",
+        help="Branche to histogram (for multiple histograms from different branches, separate branches by a comma ',')",
         required=True,
         )
     parser.add_argument(
@@ -60,120 +127,121 @@ if (__name__ == "__main__"):
         "-max", "--max",
         help="Maximum",
         )
+    parser.add_argument(
+        "-l", "--legend",
+        help="Legend (comma separated legend for several histograms, no space allowed)",
+        )
+    parser.add_argument(
+        "-ls", "--logscale",
+        help="Log scale for y-axis",
+        action="store_true",
+        )
+    parser.add_argument(
+        "-lx", "--labelx",
+        help="x-axis label (space=[space])",
+        default="",
+        )
+    parser.add_argument(
+        "-ly", "--labely",
+        help="y-axis label (space=[space])",
+        default="",
+        )
 
 
     ## Parse arguments
     args = parser.parse_args()
 
-    ## Open ROOT file
-    data = uproot.open(args.file)
+    file_names = args.file.split(",")
+    branch_names = args.branch.split(",")
+    legends = args.legend.split(",")
 
-    ## Read the branch data
-    # Get branch data as an ak array
-    branch = data[args.branch].arrays()
+    if len(file_names) != len(branch_names):
+        print("ERROR: The number of branches and files must be equal!")
+        sys.exit()
 
-    # Check if there is only 1 branch
-    fields = branch.fields
-    if len(fields) > 1:
-        print("ERROR: Path does not point to a branch. Exit.")
-        sys.exit(1)
-    elif len(fields) == 0:
-        print("ERROR: ak array has no fields! Exit.")
-        sys.exit(1)
+    number_of_histograms = len(file_names)
+    histogram = [ None for x in range(number_of_histograms) ]
 
-    # Get the branch leaves (as an ak array)
-    branchName = fields[0]
-    branch = branch[branchName]
+    if len(legends) != number_of_histograms:
+        print("WARNING: Number of legend (%d) different from number of histograms (%d)." %(len(legend), number_of_histograms))
+        print("         Will not draw legends")
+        legends = []
 
-    # Get only selected leaves/events
-    if args.index:
-        branch = branch[make_slice(args.index)]
-
-    branch = ak.flatten(branch, axis=None)
+    if number_of_histograms == 1:
+        ROOT.gStyle.SetOptStat(111111)
 
 
     ## Make plot
-    import ROOT
-    
-    # Define plot style
-    ROOT.gStyle.SetOptStat(0)
-
-    ROOT.gStyle.SetCanvasBorderMode(0)
-    ROOT.gStyle.SetCanvasColor(ROOT.kWhite)
-    ROOT.gStyle.SetCanvasDefH(600)
-    ROOT.gStyle.SetCanvasDefW(700)
-    ROOT.gStyle.SetCanvasDefX(0)
-    ROOT.gStyle.SetCanvasDefY(0)
-
-    ROOT.gStyle.SetPadTopMargin(0.08)
-    ROOT.gStyle.SetPadBottomMargin(0.15)
-    ROOT.gStyle.SetPadLeftMargin(0.13)
-    ROOT.gStyle.SetPadRightMargin(0.02)
-
-    ROOT.gStyle.SetHistLineColor(1)
-    ROOT.gStyle.SetHistLineStyle(0)
-    ROOT.gStyle.SetHistLineWidth(1)
-    ROOT.gStyle.SetEndErrorSize(2)
-    ROOT.gStyle.SetMarkerStyle(20)
-    ROOT.gStyle.SetMarkerSize(0.9)
-
-    ROOT.gStyle.SetOptTitle(0)
-    ROOT.gStyle.SetTitleFont(42)
-    ROOT.gStyle.SetTitleColor(1)
-    ROOT.gStyle.SetTitleTextColor(1)
-    ROOT.gStyle.SetTitleFillColor(10)
-    ROOT.gStyle.SetTitleFontSize(0.05)
-
-    ROOT.gStyle.SetTitleColor(1, "XYZ")
-    ROOT.gStyle.SetTitleFont(42, "XYZ")
-    ROOT.gStyle.SetTitleSize(0.07, "XYZ")
-    ROOT.gStyle.SetTitleXOffset(1.00)
-    ROOT.gStyle.SetTitleYOffset(0.90)
-
-    ROOT.gStyle.SetLabelColor(1, "XYZ")
-    ROOT.gStyle.SetLabelFont(42, "XYZ")
-    ROOT.gStyle.SetLabelOffset(0.007, "XYZ")
-    ROOT.gStyle.SetLabelSize(0.06, "XYZ")
-
-    ROOT.gStyle.SetAxisColor(1, "XYZ")
-    ROOT.gStyle.SetStripDecimals(True)
-    ROOT.gStyle.SetTickLength(0.03, "XYZ")
-    ROOT.gStyle.SetNdivisions(510, "XYZ")
-    ROOT.gStyle.SetPadTickX(1)
-    ROOT.gStyle.SetPadTickY(1)
-
-    ROOT.gStyle.SetPaperSize(20., 20.)
-    ROOT.gStyle.SetHatchesLineWidth(5)
-    ROOT.gStyle.SetHatchesSpacing(0.05)
-
-    ROOT.TGaxis.SetExponentOffset(-0.08, 0.01, "Y")
-
-
-    # Binning
-    if args.nbins:
-        nbins = int(args.nbins)
-    else:
-        nbins = 50
-
-    if args.min:
-        min_ = float(args.min)
-    else:
-        min_ = 0.9*min(branch)
-
-    if args.max:
-        max_ = float(args.max)
-    else:
-        max_ = 1.1*max(branch)
-
-
-    # Draw histogram
-    ROOT.gStyle.SetOptStat(111111)
     canvas = ROOT.TCanvas("", "", 700, 600)
-    histogram = ROOT.TH1D("", "", nbins, min_, max_)
-    for x in branch: histogram.Fill(x)
+    legend = ROOT.TLegend(0.65, 0.8-(number_of_histograms-2)*0.1, 0.95, 0.9)
 
-    histogram.SetLineColor(ROOT.kRed)
-    histogram.Draw()
+    for ihist in range(number_of_histograms):
 
-    canvas.SaveAs("./tmp.pdf")
+        file_name = file_names[ihist]
+        branch_name = branch_names[ihist]
 
+        ## Open ROOT file
+        data = uproot.open(file_name)
+
+        ## Read the branch data
+        # Get branch data as an ak array
+        branch = data[branch_name].arrays()
+
+        # Check if there is only 1 branch
+        fields = branch.fields
+        if len(fields) > 1:
+            print("ERROR: Path does not point to a branch. Exit.")
+            sys.exit(1)
+        elif len(fields) == 0:
+            print("ERROR: ak array has no fields! Exit.")
+            sys.exit(1)
+
+        # Get the branch leaves (as an ak array)
+        branchName = fields[0]
+        branch = branch[branchName]
+
+        # Get only selected leaves/events
+        if args.index:
+            branch = branch[make_slice(args.index)]
+
+        branch = ak.flatten(branch, axis=None)
+
+
+        # Binning
+        if ihist == 0:
+            if args.nbins:
+                nbins = int(args.nbins)
+            else:
+                nbins = 50
+
+            if args.min:
+                min_ = float(args.min)
+            else:
+                min_ = 0.9*min(branch)
+
+            if args.max:
+                max_ = float(args.max)
+            else:
+                max_ = 1.1*max(branch)
+
+
+        # Draw histogram
+        histogram[ihist] = ROOT.TH1D("", "", nbins, min_, max_)
+        for x in branch: histogram[ihist].Fill(x)
+
+        histogram[ihist].SetLineColor(colors[ihist])
+        histogram[ihist].SetLineStyle(linestyles[ihist])
+        histogram[ihist].Draw("SAME")
+        if len(legends)>ihist and legends[ihist] != "None":
+            legend.AddEntry(histogram[ihist], legends[ihist], "l")
+
+        # Axes title
+        if ihist == 0:
+            histogram[ihist].GetXaxis().SetTitle(args.labelx.replace("[space]", " "))
+            histogram[ihist].GetYaxis().SetTitle(args.labely.replace("[space]", " "))
+
+    if args.logscale:
+        canvas.SetLogy()
+
+    legend.Draw("SAME")
+    canvas.SaveAs(args.output)
