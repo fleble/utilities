@@ -1,0 +1,5 @@
+#!/bin/bash
+
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+tmp_file=${script_dir}/../tab2spaces/tmp.tmp
+${script_dir}/../tab2spaces/tab2spaces $1 ${tmp_file}
