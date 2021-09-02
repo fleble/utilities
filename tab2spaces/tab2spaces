@@ -1,9 +1,11 @@
 #!/bin/bash
 
-file=/tmp/tmmmmmmmmmp.tmp
+file=$1
+tmp_file=$2
 
-if [ -z $1 ]; then
+if [ -z ${file} ]; then
   echo "You must give a file name as argument!!!"
 else
-  expand -t 8 $1 > ${file} && cp ${file} $1
+  expand -t 8 ${file} > ${tmp_file} && cp ${tmp_file} ${file}
+  rm ${tmp_file}
 fi
