@@ -79,7 +79,7 @@ if (__name__ == "__main__"):
         )
     parser.add_argument(
         "-a", "--apply",
-        help="Apply a function on the array (e.g. sum)",
+        help="Apply a function on the array. Example synthax: ak.sum(ARRAY,axis=1). No space allowed!",
         )
 
 
@@ -123,7 +123,8 @@ if (__name__ == "__main__"):
 
     # Apply a function over the array
     if args.apply:
-        branch = eval(args.apply+"(branch)")
+        variable_name = args.apply.replace("ARRAY", args.branch)
+        branch = eval(args.apply.replace("ARRAY", "branch"))
 
     # Header line
     if not args.apply:
@@ -131,7 +132,7 @@ if (__name__ == "__main__"):
     elif args.count:
         print("Unique values and counts in branch %s:" %(args.branch))
     else:
-        print(args.apply+"(" + args.branch + "):")
+        print(variable_name)
 
     # Print asked information
     if args.count:
