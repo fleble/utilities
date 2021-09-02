@@ -143,7 +143,8 @@ if (__name__ == "__main__"):
         elif args.countFormat == "number":
             unit = ""
             unit_factor = 1
-        for value, count in counter.items():
+        for value in sorted(counter.keys()):
+            count = counter[value]
             count = count*unit_factor
             print("%s: %d %s" %(value, count, unit))
             total_count += count
