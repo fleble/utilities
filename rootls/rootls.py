@@ -21,6 +21,7 @@ def getType(fullType):
     return(str(fullType).split("'")[1].split(".")[-1])
 
 
+
 if (__name__ == "__main__"):
 
     ## Parse arguments
@@ -66,8 +67,10 @@ if (__name__ == "__main__"):
             if type_ == "TTree":
                 k0 = list(f1.keys())[0]
                 nevts = len(f1[k0])
-                if element == "Events": name = "events"
-                else: name = "entries"
+                if element == "Events":
+                    name = "events" if nevts > 1 else "event"
+                else:
+                    name = "entries" if nevts > 1 else "entry"
                 nevtsStr = " (%d %s)" %(nevts, name)
             else:
                 nevtsStr = ""

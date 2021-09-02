@@ -1,5 +1,7 @@
 import argparse
 import sys
+from collections import Counter
+
 import uproot
 import awkward as ak
 
@@ -50,9 +52,25 @@ if (__name__ == "__main__"):
         help="Index of the array to print out (can use slicing)",
         )
     parser.add_argument(
+        "-flat", "--flatten",
+        help="Flatten arrays (over the different events)",
+        action="store_true",
+        )
+    parser.add_argument(
         "-l", "--list",
         help="Cast ak array into a list to display the whole array",
         action="store_true",
+        )
+    parser.add_argument(
+        "-c", "--count",
+        help="Count unique values in the array",
+        action="store_true",
+        )
+    parser.add_argument(
+        "-cf", "--countFormat",
+        choices=["fraction", "number"],
+        default="fraction",
+        help="Format in which to express output from unique values counting. Choices=%(choices)s. Default=%(default)s",
         )
     parser.add_argument(
         "-n", "--number",
@@ -61,7 +79,7 @@ if (__name__ == "__main__"):
         )
     parser.add_argument(
         "-a", "--apply",
-        help="Apply a function on the array (e.g. sum)",
+        help="Apply a function on the array. Example synthax: ak.sum(ARRAY,axis=1). No space allowed!",
         )
 
 
@@ -96,19 +114,46 @@ if (__name__ == "__main__"):
     if args.index:
         branch = branch[make_slice(args.index)]
 
+    if args.flatten:
+        branch = ak.flatten(branch, axis=None)
+
+    # Count unique values
+    if args.count:
+        counter = Counter(branch)
+
     # Apply a function over the array
     if args.apply:
-        branch = eval(args.apply+"(branch)")
+        variable_name = args.apply.replace("ARRAY", args.branch)
+        branch = eval(args.apply.replace("ARRAY", "branch"))
 
+    # Header line
     if not args.apply:
         print("Content of branch %s:" %(args.branch))
+    elif args.count:
+        print("Unique values and counts in branch %s:" %(args.branch))
     else:
-        print(args.apply+"(" + args.branch + "):")
+        print(variable_name)
 
-    if not args.number:
-        print(branch)
+    # Print asked information
+    if args.count:
+        total_count = 0
+        if args.countFormat == "fraction":
+            unit = "%"
+            unit_factor = 100/sum(counter.values())
+        elif args.countFormat == "number":
+            unit = ""
+            unit_factor = 1
+        for value, count in counter.items():
+            count = count*unit_factor
+            print("%s: %d %s" %(value, count, unit))
+            total_count += count
+        print("%s: %d %s" %("Total", total_count, unit))
+    
     else:
-        print("Entry\tValue")
-        for idx, x in enumerate(branch):
-            print("%d\t%s" %(idx, x))
+        if not args.number:
+            print(branch)
+        else:
+            print("Entry\tValue")
+            for idx, x in enumerate(branch):
+                print("%d\t%s" %(idx, x))
 
