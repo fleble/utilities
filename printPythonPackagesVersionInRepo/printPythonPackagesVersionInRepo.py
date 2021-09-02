@@ -36,7 +36,8 @@ def get_packages_in_repo(path, packages_list=[]):
     for item in listdir(path):
         full_path = join(path, item)
         if isfile(full_path):
-            packages_list += get_packages_in_file(full_path)
+            if item.endswith(".py"):
+                packages_list += get_packages_in_file(full_path)
         else:
             packages_list += get_packages_in_repo(full_path)
 
