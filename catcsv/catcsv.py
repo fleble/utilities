@@ -58,6 +58,11 @@ if __name__ == "__main__":
         choices=["+", "-"],
         default="+"
         )
+    parser.add_argument(
+        "-i", "--printIndex",
+        help="print index column",
+        action="store_true"
+        )
 
     args = parser.parse_args()
 
@@ -72,7 +77,7 @@ if __name__ == "__main__":
             df.sort_values(args.sort.split(","), inplace=True, ascending=ascending)
 
         ## Make columns
-        csvData = [ df.columns ]
+        csvData = [ list(df.columns) ]
         csvData = csvData + [ [str(row[col]) for col in df.columns] for idx, row in df.iterrows() ]
 
     else:
@@ -84,6 +89,11 @@ if __name__ == "__main__":
             csvData = csvFile.readlines()
         csvData = [ x.replace("\n", "").split(args.delimiter) for x in csvData ]
 
+    ## Add index
+    if args.printIndex:
+        header = [ ["Index"] + csvData[0] ]
+        csvData = [ [str(irow)] + row for irow, row in enumerate(csvData[1:]) ]
+        csvData =  header + csvData
 
     ## Get number of columns
     nCols = len(csvData[0])
@@ -98,7 +108,7 @@ if __name__ == "__main__":
     ## Print csv file
     if not args.noColumns:
         printRow(csvData[0], maxLen, nCols)
-        print((sum(maxLen)+len(maxLen))*"-")
+        print((sum(maxLen)+2*len(maxLen))*"-")
         idx0 = 1
     else: idx0 = 0
 
