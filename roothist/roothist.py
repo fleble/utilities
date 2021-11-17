@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 import ROOT
 
 
+def replace_spaces(text):
+    return text.replace("[space]", " ")
+
+
 # Colors
 colors = [ROOT.kRed, ROOT.kBlue, ROOT.kGreen, ROOT.kBlack]
 linestyles = [ 4, 5, 6, 1 ]
@@ -108,12 +112,17 @@ if (__name__ == "__main__"):
         )
     parser.add_argument(
         "-b", "--branch",
-        help="Branche to histogram (for multiple histograms from different branches, separate branches by a comma ',')",
+        help="Branch to histogram (for multiple histograms from different branches, separate branches by a comma ',')",
         required=True,
         )
     parser.add_argument(
         "-i", "--index",
-        help="Index of the array to print out (can use slicing)",
+        help="axis-0 index of the array to histogram (can use slicing)",
+        )
+    parser.add_argument(
+        "-j", "--jindex",
+        help="axis-1 index of the array to histogram",
+        type=int
         )
     parser.add_argument(
         "-n", "--nbins",
@@ -129,7 +138,7 @@ if (__name__ == "__main__"):
         )
     parser.add_argument(
         "-l", "--legend",
-        help="Legend (comma separated legend for several histograms, no space allowed)",
+        help="Legend (comma separated legend for several histograms, (space=[space])",
         )
     parser.add_argument(
         "-ls", "--logscale",
@@ -153,7 +162,10 @@ if (__name__ == "__main__"):
 
     file_names = args.file.split(",")
     branch_names = args.branch.split(",")
-    legends = args.legend.split(",")
+    if args.legend is not None:
+        legends = replace_spaces(args.legend).split(",")
+    else:
+        legends = None
 
     if len(file_names) != len(branch_names):
         print("ERROR: The number of branches and files must be equal!")
@@ -162,7 +174,7 @@ if (__name__ == "__main__"):
     number_of_histograms = len(file_names)
     histogram = [ None for x in range(number_of_histograms) ]
 
-    if len(legends) != number_of_histograms:
+    if legends is not None and len(legends) != number_of_histograms:
         print("WARNING: Number of legend (%d) different from number of histograms (%d)." %(len(legend), number_of_histograms))
         print("         Will not draw legends")
         legends = []
@@ -204,6 +216,10 @@ if (__name__ == "__main__"):
         if args.index:
             branch = branch[make_slice(args.index)]
 
+        if args.jindex:
+            branch = branch[ak.num(branch, axis=1)>args.jindex]
+            branch = branch[:, args.jindex]
+
         branch = ak.flatten(branch, axis=None)
 
 
@@ -232,13 +248,13 @@ if (__name__ == "__main__"):
         histogram[ihist].SetLineColor(colors[ihist])
         histogram[ihist].SetLineStyle(linestyles[ihist])
         histogram[ihist].Draw("SAME")
-        if len(legends)>ihist and legends[ihist] != "None":
+        if legends is not None and len(legends)>ihist and legends[ihist] != "None":
             legend.AddEntry(histogram[ihist], legends[ihist], "l")
 
         # Axes title
         if ihist == 0:
-            histogram[ihist].GetXaxis().SetTitle(args.labelx.replace("[space]", " "))
-            histogram[ihist].GetYaxis().SetTitle(args.labely.replace("[space]", " "))
+            histogram[ihist].GetXaxis().SetTitle(replace_spaces(args.labelx))
+            histogram[ihist].GetYaxis().SetTitle(replace_spaces(args.labely))
 
     if args.logscale:
         canvas.SetLogy()
