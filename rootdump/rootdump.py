@@ -1,5 +1,6 @@
 import argparse
 import sys
+import re
 from collections import Counter
 
 import uproot
@@ -57,9 +58,17 @@ if (__name__ == "__main__"):
         action="store_true",
         )
     parser.add_argument(
+        "-filter", "--filter",
+        help="Filter the array using the specified array. Example synthax: data.branch_name==1. No space allowed!",
+        )
+    parser.add_argument(
         "-l", "--list",
         help="Cast ak array into a list to display the whole array",
         action="store_true",
+        )
+    parser.add_argument(
+        "-lf", "--list_format",
+        help="Format of each element. e.g. .2f",
         )
     parser.add_argument(
         "-c", "--count",
@@ -106,6 +115,18 @@ if (__name__ == "__main__"):
     branchName = fields[0]
     branch = branch[branchName]
 
+    # Filter the array
+    if args.filter:
+        variables = re.findall(r"data\[\"Events\"\]\[\"[^\[]*\"\]", args.filter)
+        filter_text = args.filter
+        for variable in variables:
+            filter_text = filter_text.replace(variable, variable + ".array()")
+        branch = branch[eval(filter_text)]
+        filter_text_for_printout = args.filter\
+            .replace("data[\"Events\"]", "")\
+            .replace("[\"", "")\
+            .replace("\"]", "")
+
     # Cast into a list (useful for printing out the all leaves/events)
     if args.list:
         branch = ak.to_list(branch)
@@ -134,6 +155,9 @@ if (__name__ == "__main__"):
     else:
         print(variable_name)
 
+    if args.filter:
+        print("with selection: %s" %filter_text_for_printout)
+
     # Print asked information
     if args.count:
         total_count = 0
@@ -156,5 +180,16 @@ if (__name__ == "__main__"):
         else:
             print("Entry\tValue")
             for idx, x in enumerate(branch):
-                print("%d\t%s" %(idx, x))
+                if args.list_format:
+                    if len(x) == 0:
+                        x_str = "[]"
+                    else:
+                        x_str = "["
+                        for y in x:
+                            s = "%" + args.list_format
+                            x_str += s %(y) + ", "
+                        x_str = x_str[:-2] + "]"
+                else:
+                   x_str = x
+                print("%d\t%s" %(idx, x_str))
 
