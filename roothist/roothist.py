@@ -13,7 +13,8 @@ def replace_spaces(text):
 
 # Colors
 colors = [ROOT.kRed, ROOT.kBlue, ROOT.kGreen, ROOT.kBlack]
-linestyles = [ 4, 5, 6, 1 ]
+linestyles = [ 1, 9, 7, 1 ]
+#linestyles = [ 1, 1, 1, 1 ]
 
 ROOT.gROOT.SetBatch()
 
@@ -125,6 +126,10 @@ if (__name__ == "__main__"):
         type=int
         )
     parser.add_argument(
+        "-filter", "--filter",
+        help="Filter the array using the specified array. Example synthax: data.[\"branch_name\"]==1. No space allowed!",
+        )
+    parser.add_argument(
         "-n", "--nbins",
         help="Number of bins",
         )
@@ -171,6 +176,9 @@ if (__name__ == "__main__"):
         print("ERROR: The number of branches and files must be equal!")
         sys.exit()
 
+    if args.filter:
+        filters = args.filter.split(",")
+
     number_of_histograms = len(file_names)
     histogram = [ None for x in range(number_of_histograms) ]
 
@@ -197,20 +205,13 @@ if (__name__ == "__main__"):
 
         ## Read the branch data
         # Get branch data as an ak array
-        branch = data[branch_name].arrays()
+        branch = data[branch_name].array()
 
-        # Check if there is only 1 branch
-        fields = branch.fields
-        if len(fields) > 1:
-            print("ERROR: Path does not point to a branch. Exit.")
-            sys.exit(1)
-        elif len(fields) == 0:
-            print("ERROR: ak array has no fields! Exit.")
-            sys.exit(1)
-
-        # Get the branch leaves (as an ak array)
-        branchName = fields[0]
-        branch = branch[branchName]
+        if args.filter:
+            filter_expr = filters[ihist]
+            if filter_expr:
+                filter_ = eval(filter_expr)
+                branch = branch[filter_]
 
         # Get only selected leaves/events
         if args.index:
@@ -247,7 +248,9 @@ if (__name__ == "__main__"):
 
         histogram[ihist].SetLineColor(colors[ihist])
         histogram[ihist].SetLineStyle(linestyles[ihist])
+        histogram[ihist].SetLineWidth(2)
         histogram[ihist].Draw("SAME")
+        #histogram[ihist].Draw("E1P SAME")
         if legends is not None and len(legends)>ihist and legends[ihist] != "None":
             legend.AddEntry(histogram[ihist], legends[ihist], "l")
 
