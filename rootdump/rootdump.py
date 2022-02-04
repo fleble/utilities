@@ -3,7 +3,9 @@ import sys
 import re
 from collections import Counter
 
+import pandas as pd
 import uproot
+import numpy as np
 import awkward as ak
 
 
@@ -59,7 +61,12 @@ if (__name__ == "__main__"):
         )
     parser.add_argument(
         "-filter", "--filter",
-        help="Filter the array using the specified array. Example synthax: data.branch_name==1. No space allowed!",
+        help="Filter the array using the specified array. Example synthax: data.[\"branch_name\"]==1. No space allowed!",
+        )
+    parser.add_argument(
+        "-pd", "--pandas",
+        help="Cast into pandas dataframe",
+        action="store_true",
         )
     parser.add_argument(
         "-l", "--list",
@@ -90,6 +97,10 @@ if (__name__ == "__main__"):
         "-a", "--apply",
         help="Apply a function on the array. Example synthax: ak.sum(ARRAY,axis=1). No space allowed!",
         )
+    parser.add_argument(
+        "-sv", "--sort_values",
+        help="If --pandas, name of the column to sort values by",
+        )
 
 
     ## Parse arguments
@@ -100,32 +111,70 @@ if (__name__ == "__main__"):
 
     ## Read the branch data
     # Get branch data as an ak array
-    branch = data[args.branch].arrays()
+    branche_names = args.branch.split(",")
+    branches = ak.Array({branch_name: data[branch_name].array() for branch_name in branche_names})
 
-    # Check if there is only 1 branch
-    fields = branch.fields
-    if len(fields) > 1:
-        print("ERROR: Path does not point to a branch. Exit.")
-        sys.exit(1)
-    elif len(fields) == 0:
-        print("ERROR: ak array has no fields! Exit.")
-        sys.exit(1)
-
-    # Get the branch leaves (as an ak array)
-    branchName = fields[0]
-    branch = branch[branchName]
+#    # Check if there is only 1 branch
+#    fields = branch_names
+#    if len(fields) > 1:
+#        if args.pandas:
+#            data_frame = ak.to_pandas(branches)
+#            if args.sort_values:
+#                data_frame.sort_values(by=args.sort_values, inplace=True)
+#            with pd.option_context(
+#                "display.max_rows", None,
+#                "display.max_columns", None,
+#                "display.precision", 5,
+#                "display.expand_frame_repr", False
+#                #"max_colwidth", 20
+#                ):
+#                print(data_frame)
+#            exit(0)
+#
+#        else:
+#            print("ERROR: Several branches is only compatible with --pandas")
+#            sys.exit(1)
+#    elif len(fields) == 0:
+#        print("ERROR: ak array has no fields! Exit.")
+#        sys.exit(1)
+#    else:
+#        # Get the branch leaves (as an ak array)
+#        branch_name = fields[0]
+#        branch = branches[branch_name]
 
     # Filter the array
     if args.filter:
-        variables = re.findall(r"data\[\"Events\"\]\[\"[^\[]*\"\]", args.filter)
-        filter_text = args.filter
-        for variable in variables:
-            filter_text = filter_text.replace(variable, variable + ".array()")
-        branch = branch[eval(filter_text)]
         filter_text_for_printout = args.filter\
-            .replace("data[\"Events\"]", "")\
+            .replace("data[\"", "")\
             .replace("[\"", "")\
-            .replace("\"]", "")
+            .replace("\"]", "")\
+            .replace(".array()", "")
+        filter_text_for_printout = args.filter
+        filter_ = eval(args.filter)
+        filter_count = ak.count(filter_, axis=-1)
+        for branch_name in branches.fields:
+            count = ak.count(branches[branch_name], axis=-1)
+            if ak.all(count == filter_count):
+                branches[branch_name] = branches[branch_name][filter_]
+
+    # Cast to pandas dataframe
+    if args.pandas:
+        data_frame = ak.to_pandas(branches)
+        if args.sort_values:
+            data_frame.sort_values(by=args.sort_values, inplace=True)
+        with pd.option_context(
+            "display.max_rows", None,
+            "display.max_columns", None,
+            "display.precision", 5,
+            "display.expand_frame_repr", False
+            #"max_colwidth", 20
+            ):
+            print(data_frame)
+        exit(0)
+
+
+    branch_name = branch_names[0]
+    branch = branches[branch_name]
 
     # Cast into a list (useful for printing out the all leaves/events)
     if args.list:
