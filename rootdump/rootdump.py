@@ -111,8 +111,8 @@ if (__name__ == "__main__"):
 
     ## Read the branch data
     # Get branch data as an ak array
-    branche_names = args.branch.split(",")
-    branches = ak.Array({branch_name: data[branch_name].array() for branch_name in branche_names})
+    branch_names = args.branch.split(",")
+    branches = ak.Array({branch_name: data[branch_name].array() for branch_name in branch_names})
 
 #    # Check if there is only 1 branch
 #    fields = branch_names
