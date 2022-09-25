@@ -1,30 +1,10 @@
-import uproot3
 import argparse
+import re
+
+import uproot
 
 
-def list2str(L, strForConcatenation=""):
-    """
-    Takes a list of elements convertible to str and optionally a string.
-    Returns the concatenation of elements in the list separated by the optional string.
-
-    """
-
-    if len(L)==0:
-        return("")
-    else:
-        s = L[0]
-        for el in L[1:]: s = s + strForConcatenation + str(el)
-        return(s)
-
-
-def getType(fullType):
-    return(str(fullType).split("'")[1].split(".")[-1])
-
-
-
-if (__name__ == "__main__"):
-
-    ## Parse arguments
+def __get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-f", "--file",
@@ -47,26 +27,52 @@ if (__name__ == "__main__"):
         action="store_true"
         )
 
+    return parser.parse_args()
 
-    args = parser.parse_args()
+
+
+def list_to_str(L, strForConcatenation=""):
+    """
+    Takes a list of elements convertible to str and optionally a string.
+    Returns the concatenation of elements in the list separated by the optional string.
+
+    """
+
+    if len(L)==0:
+        return("")
+    else:
+        s = L[0]
+        for el in L[1:]: s = s + strForConcatenation + str(el)
+        return s
+
+
+def get_type(full_type):
+    type_ = str(full_type).split("'")[1].split(".")[-1]
+    type_ = type_.replace("Model_", "")
+    re_search = re.search(r"(.*)_v[0-9]+", type_)
+    if re_search:
+        type_ = re_search.group(1)
+    return type_
+    
+
+def main(args):
 
     filename = args.file
     depth = int(args.depth)
 
-    file_ = uproot3.open(filename)
+    file_ = uproot.open(filename)
 
     if args.noemptyline: newline = ""
     else: newline = "\n"
 
     if depth>0 and hasattr(file_, "keys"):
         for in1 in file_.keys():
-            in1 = in1.decode("utf-8")
             f1 = file_[in1]
-            type_ = getType(type(f1))
-            element = list2str(in1.split(";")[:-1])
+            type_ = get_type(type(f1))
+            element = list_to_str(in1.split(";")[:-1])
             if type_ == "TTree":
                 k0 = list(f1.keys())[0]
-                nevts = len(f1[k0])
+                nevts = f1[k0].num_entries
                 if element == "Events":
                     name = "events" if nevts > 1 else "event"
                 else:
@@ -81,15 +87,22 @@ if (__name__ == "__main__"):
             if depth>1:
                 if hasattr(f1, "keys"):
                     for in2 in f1.keys():
-                        in2 = in2.decode("utf-8")
-                        type_ = getType(type(f1[in2]))
+                        type_ = get_type(type(f1[in2]))
                         print(4*" " + type_ + "\t" + in2)
                         if depth>2:
                             f2 = f1[in2]
                             if hasattr(f2, "keys"):
                                 for in3 in f2.keys():
-                                    in3 = in3.decode("utf-8")
                                     print(8*" " + in3)
 
+
+
+
+
+if (__name__ == "__main__"):
+
+    ## Parse arguments
+    args = __get_arguments()
+    main(args)
 
 
