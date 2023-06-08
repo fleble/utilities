@@ -25,11 +25,11 @@ def calculate_cut_efficiencies(cutflow):
     absolute_efficiencies = []
     relative_efficiencies = []
 
-    sum_gen_weight_no_cut = cutflow["NoCut"]
+    sum_gen_weight_no_cut = cutflow["Initial"]
     for cut_name, sum_gen_weight in cutflow.items():
         cut_names.append(cut_name)
         sum_gen_weights.append(sum_gen_weight)
-        if cut_name == "NoCut":
+        if cut_name == "Initial":
             absolute_efficiency = 1.
             relative_efficiency = 1.
         else:
@@ -111,8 +111,8 @@ if (__name__ == "__main__"):
         )
     parser.add_argument(
         "-t", "--tree",
-        default="Cutflow",
-        help="Cutflow tree name",
+        default="CutFlow",
+        help="Cut flow tree name",
         )
 
     args = parser.parse_args()
