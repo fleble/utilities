@@ -3,6 +3,8 @@ import re
 
 import uproot
 
+from helpers.generalUtilities import list_to_str
+
 
 def __get_arguments():
     parser = argparse.ArgumentParser()
@@ -17,33 +19,17 @@ def __get_arguments():
         default=2,
         )
     parser.add_argument(
-        "-nb", "--nobold",
+        "-nb", "--no_bold",
         help="Do not use bold",
         action="store_true"
         )
     parser.add_argument(
-        "-nel", "--noemptyline",
+        "-nel", "--no_empty_line",
         help="No empty lines",
         action="store_true"
         )
 
     return parser.parse_args()
-
-
-
-def list_to_str(L, strForConcatenation=""):
-    """
-    Takes a list of elements convertible to str and optionally a string.
-    Returns the concatenation of elements in the list separated by the optional string.
-
-    """
-
-    if len(L)==0:
-        return("")
-    else:
-        s = L[0]
-        for el in L[1:]: s = s + strForConcatenation + str(el)
-        return s
 
 
 def get_type(full_type):
@@ -53,7 +39,8 @@ def get_type(full_type):
     if re_search:
         type_ = re_search.group(1)
     return type_
-    
+
+
 
 def main(args):
 
@@ -62,7 +49,7 @@ def main(args):
 
     file_ = uproot.open(filename)
 
-    if args.noemptyline: newline = ""
+    if args.no_empty_line: newline = ""
     else: newline = "\n"
 
     if depth>0 and hasattr(file_, "keys"):
@@ -80,7 +67,7 @@ def main(args):
                 nevtsStr = " (%d %s)" %(nevts, name)
             else:
                 nevtsStr = ""
-            if args.nobold:
+            if args.no_bold:
                 print(newline + type_ + "\t" + element + nevtsStr )
             else:
                 print("\033[1m" + newline + type_ + "\t" + element + nevtsStr + "\033[0m")
@@ -96,12 +83,8 @@ def main(args):
                                     print(8*" " + in3)
 
 
+if __name__ == "__main__":
 
-
-
-if (__name__ == "__main__"):
-
-    ## Parse arguments
     args = __get_arguments()
     main(args)
 

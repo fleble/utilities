@@ -6,105 +6,25 @@ import awkward as ak
 import matplotlib.pyplot as plt
 import ROOT
 
-
-def replace_spaces(text):
-    return text.replace("[space]", " ")
-
-
-# Colors
-colors = [ROOT.kRed, ROOT.kBlue, ROOT.kGreen, ROOT.kBlack]
-linestyles = [ 1, 9, 7, 1 ]
-#linestyles = [ 1, 1, 1, 1 ]
+from helpers.generalUtilities import make_slice
 
 ROOT.gROOT.SetBatch()
 
-# Define plot style
-ROOT.gStyle.SetOptStat(0000)
-ROOT.gStyle.SetOptFit(0000)
-
-ROOT.gStyle.SetCanvasBorderMode(0)
-ROOT.gStyle.SetCanvasColor(ROOT.kWhite)
-ROOT.gStyle.SetCanvasDefH(600)
-ROOT.gStyle.SetCanvasDefW(700)
-ROOT.gStyle.SetCanvasDefX(0)
-ROOT.gStyle.SetCanvasDefY(0)
-
-ROOT.gStyle.SetPadTopMargin(0.08)
-ROOT.gStyle.SetPadBottomMargin(0.15)
-ROOT.gStyle.SetPadLeftMargin(0.13)
-ROOT.gStyle.SetPadRightMargin(0.02)
-
-ROOT.gStyle.SetHistLineColor(1)
-ROOT.gStyle.SetHistLineStyle(0)
-ROOT.gStyle.SetHistLineWidth(1)
-ROOT.gStyle.SetEndErrorSize(2)
-ROOT.gStyle.SetMarkerStyle(20)
-ROOT.gStyle.SetMarkerSize(0.9)
-
-ROOT.gStyle.SetOptTitle(0)
-ROOT.gStyle.SetTitleFont(42)
-ROOT.gStyle.SetTitleColor(1)
-ROOT.gStyle.SetTitleTextColor(1)
-ROOT.gStyle.SetTitleFillColor(10)
-ROOT.gStyle.SetTitleFontSize(0.05)
-
-ROOT.gStyle.SetTitleColor(1, "XYZ")
-ROOT.gStyle.SetTitleFont(42, "XYZ")
-ROOT.gStyle.SetTitleSize(0.05, "XYZ")
-ROOT.gStyle.SetTitleXOffset(1.00)
-ROOT.gStyle.SetTitleYOffset(0.90)
-
-ROOT.gStyle.SetLabelColor(1, "XYZ")
-ROOT.gStyle.SetLabelFont(42, "XYZ")
-ROOT.gStyle.SetLabelOffset(0.007, "XYZ")
-ROOT.gStyle.SetLabelSize(0.04, "XYZ")
-
-ROOT.gStyle.SetAxisColor(1, "XYZ")
-ROOT.gStyle.SetStripDecimals(True)
-ROOT.gStyle.SetTickLength(0.03, "XYZ")
-ROOT.gStyle.SetNdivisions(510, "XYZ")
-ROOT.gStyle.SetPadTickX(1)
-ROOT.gStyle.SetPadTickY(1)
-
-ROOT.gStyle.SetPaperSize(20., 20.)
-ROOT.gStyle.SetHatchesLineWidth(5)
-ROOT.gStyle.SetHatchesSpacing(0.05)
-
-ROOT.TGaxis.SetExponentOffset(-0.08, 0.01, "Y")
+colors = [ROOT.kRed, ROOT.kBlue, ROOT.kGreen, ROOT.kBlack, ROOT.kGray+1]
+line_styles = [1, 9, 7, 2, 3]
 
 
-def make_slice(sliceText):
-    """
-    Return the slice object corresponding to the equivalent slice expression as a string.
-    Examples:
-    > L = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-    > L(make_slice("3"))
-    [4]
-    > L(make_slice(":3"))
-    [1, 2, 3]
-    > L(make_slice("1:3"))
-    [2, 3]
-    > L(make_slice("::2"))
-    [1, 3, 5, 7, 9]
-    """
-
-    split = sliceText.split(":")
-    if len(split) == 1:
-        return int(sliceText)
-    else:
-        return slice(*map(lambda x: int(x.strip()) if x.strip() else None, sliceText.split(':')))
-
-
-if (__name__ == "__main__"):
-    """
-    """
-
-    ## Parse arguments
+def __get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-o", "--output",
         default="tmp.pdf",
         help="Output file name (default=tmp.pdf)",
+        )
+    parser.add_argument(
+        "-from_thist", "--from_thist",
+        action="store_true",
+        help="The branch name points to already existing THist histograms",
         )
     parser.add_argument(
         "-f", "--file",
@@ -142,6 +62,12 @@ if (__name__ == "__main__"):
         help="Maximum",
         )
     parser.add_argument(
+        "-norm1", "--normalize_to_1",
+        help="Normalize to unit area",
+        required=False,
+        action="store_true",
+        )
+    parser.add_argument(
         "-l", "--legend",
         help="Legend (comma separated legend for several histograms, (space=[space])",
         )
@@ -160,15 +86,149 @@ if (__name__ == "__main__"):
         help="y-axis label (space=[space])",
         default="",
         )
+    parser.add_argument(
+        "-ymin", "--ymin",
+        help="y min value",
+        type=float,
+        )
+    parser.add_argument(
+        "-ymax", "--ymax",
+        help="y max value",
+        type=float,
+        )
+    parser.add_argument(
+        "-nsb", "--no_stat_box",
+        help="Do not show stat box",
+        required=False,
+        action="store_true",
+        )
+
+    return parser.parse_args()
 
 
-    ## Parse arguments
-    args = parser.parse_args()
+def __setup_style():
+    ROOT.gStyle.SetOptStat(000000)
+    ROOT.gStyle.SetOptFit(0000000)
+
+    ROOT.gStyle.SetCanvasBorderMode(0)
+    ROOT.gStyle.SetCanvasColor(ROOT.kWhite)
+    ROOT.gStyle.SetCanvasDefH(600)
+    ROOT.gStyle.SetCanvasDefW(700)
+    ROOT.gStyle.SetCanvasDefX(0)
+    ROOT.gStyle.SetCanvasDefY(0)
+
+    ROOT.gStyle.SetPadTopMargin(0.08)
+    ROOT.gStyle.SetPadBottomMargin(0.15)
+    ROOT.gStyle.SetPadLeftMargin(0.13)
+    ROOT.gStyle.SetPadRightMargin(0.06)
+
+    ROOT.gStyle.SetHistLineColor(1)
+    ROOT.gStyle.SetHistLineStyle(0)
+    ROOT.gStyle.SetHistLineWidth(1)
+    ROOT.gStyle.SetEndErrorSize(2)
+    ROOT.gStyle.SetMarkerStyle(20)
+    ROOT.gStyle.SetMarkerSize(0.9)
+
+    ROOT.gStyle.SetOptTitle(0)
+    ROOT.gStyle.SetTitleFont(42)
+    ROOT.gStyle.SetTitleColor(1)
+    ROOT.gStyle.SetTitleTextColor(1)
+    ROOT.gStyle.SetTitleFillColor(10)
+    ROOT.gStyle.SetTitleFontSize(0.05)
+
+    ROOT.gStyle.SetTitleColor(1, "XYZ")
+    ROOT.gStyle.SetTitleFont(42, "XYZ")
+    ROOT.gStyle.SetTitleSize(0.05, "XYZ")
+    ROOT.gStyle.SetTitleXOffset(1.00)
+    ROOT.gStyle.SetTitleYOffset(0.90)
+
+    ROOT.gStyle.SetLabelColor(1, "XYZ")
+    ROOT.gStyle.SetLabelFont(42, "XYZ")
+    ROOT.gStyle.SetLabelOffset(0.007, "XYZ")
+    ROOT.gStyle.SetLabelSize(0.04, "XYZ")
+
+    ROOT.gStyle.SetAxisColor(1, "XYZ")
+    ROOT.gStyle.SetStripDecimals(True)
+    ROOT.gStyle.SetTickLength(0.03, "XYZ")
+    ROOT.gStyle.SetNdivisions(510, "XYZ")
+    ROOT.gStyle.SetPadTickX(1)
+    ROOT.gStyle.SetPadTickY(1)
+
+    ROOT.gStyle.SetPaperSize(20., 20.)
+    ROOT.gStyle.SetHatchesLineWidth(5)
+    ROOT.gStyle.SetHatchesSpacing(0.05)
+
+    ROOT.TGaxis.SetExponentOffset(-0.08, 0.01, "Y")
+
+
+def __get_binning(args, branch):
+    if args.nbins:
+        n_bins = int(args.nbins)
+    else:
+        n_bins = 50
+
+    if args.min:
+        min_ = float(args.min)
+    else:
+        min_ = 0.9*min(branch)
+
+    if args.max:
+        max_ = float(args.max)
+    else:
+        max_ = 1.1*max(branch)
+
+    return n_bins, min_, max_
+
+
+def __get_histogram_from_array(args, file_name, branch_name, filter_expression, binning=None):
+
+    ## Open ROOT file
+    data = uproot.open(file_name)
+
+    ## Read the branch data
+    # Get branch data as an ak array
+    branch = data[branch_name].array()
+
+    if args.filter:
+        if filter_expression is not None:
+            filter_ = eval(filter_expression)
+            branch = branch[filter_]
+
+    # Get only selected leaves/events
+    if args.index:
+        branch = branch[make_slice(args.index)]
+
+    if args.jindex:
+        branch = branch[ak.num(branch, axis=1)>args.jindex]
+        branch = branch[:, args.jindex]
+
+    branch = ak.flatten(branch, axis=None)
+
+    # Binning
+    if binning is None:
+        n_bins, min_, max_ = __get_binning(args, branch)
+    else:
+        n_bins, min_, max_ = binning
+
+    # Draw histogram
+    histogram = ROOT.TH1D("", "", n_bins, min_, max_)
+    for x in branch: histogram.Fill(x)
+
+    if args.normalize_to_1:
+        histogram.Scale(1 / histogram.Integral())
+
+    return histogram
+
+
+def main():
+
+    args = __get_arguments()
+    __setup_style()
 
     file_names = args.file.split(",")
     branch_names = args.branch.split(",")
     if args.legend is not None:
-        legends = replace_spaces(args.legend).split(",")
+        legends = args.legend.split(",")
     else:
         legends = None
 
@@ -178,89 +238,68 @@ if (__name__ == "__main__"):
 
     if args.filter:
         filters = args.filter.split(",")
+    else:
+        filters = None
 
     number_of_histograms = len(file_names)
-    histogram = [ None for x in range(number_of_histograms) ]
+    histograms = [ None for x in range(number_of_histograms) ]
 
     if legends is not None and len(legends) != number_of_histograms:
         print("WARNING: Number of legend (%d) different from number of histograms (%d)." %(len(legend), number_of_histograms))
         print("         Will not draw legends")
         legends = []
 
-    if number_of_histograms == 1:
+    if number_of_histograms == 1 and not args.no_stat_box:
         ROOT.gStyle.SetOptStat(111111)
 
 
     ## Make plot
     canvas = ROOT.TCanvas("", "", 700, 600)
-    legend = ROOT.TLegend(0.65, 0.8-(number_of_histograms-2)*0.1, 0.95, 0.9)
+    legend = ROOT.TLegend(0.65, 0.8-(number_of_histograms-2)*0.08, 0.92, 0.9)
+    draw_legend = False
 
     for ihist in range(number_of_histograms):
+        if args.from_thist:
+            pass
 
-        file_name = file_names[ihist]
-        branch_name = branch_names[ihist]
+        else:
+            file_name = file_names[ihist]
+            branch_name = branch_names[ihist]
+            filter_expression = filters[ihist] if filters is not None else None
+            if filter_expression == "None": filter_expression = None
+            color = colors[ihist]
+            line_style = line_styles[ihist]
+            legend_label = legends[ihist] if legends is not None else None
 
-        ## Open ROOT file
-        data = uproot.open(file_name)
+            histogram = __get_histogram_from_array(args, file_name, branch_name, filter_expression, binning=None)
+            histograms.append(histogram)
+            #histogram[ihist].Draw("E1P SAME")
+            if legend_label not in (None, "None"):
+            #if legends is not None and len(legends)>ihist and legends[ihist] != "None":
+                draw_legend = True
+                legend.AddEntry(histogram, legend_label, "l")
 
-        ## Read the branch data
-        # Get branch data as an ak array
-        branch = data[branch_name].array()
-
-        if args.filter:
-            filter_expr = filters[ihist]
-            if filter_expr:
-                filter_ = eval(filter_expr)
-                branch = branch[filter_]
-
-        # Get only selected leaves/events
-        if args.index:
-            branch = branch[make_slice(args.index)]
-
-        if args.jindex:
-            branch = branch[ak.num(branch, axis=1)>args.jindex]
-            branch = branch[:, args.jindex]
-
-        branch = ak.flatten(branch, axis=None)
-
-
-        # Binning
-        if ihist == 0:
-            if args.nbins:
-                nbins = int(args.nbins)
-            else:
-                nbins = 50
-
-            if args.min:
-                min_ = float(args.min)
-            else:
-                min_ = 0.9*min(branch)
-
-            if args.max:
-                max_ = float(args.max)
-            else:
-                max_ = 1.1*max(branch)
-
-
-        # Draw histogram
-        histogram[ihist] = ROOT.TH1D("", "", nbins, min_, max_)
-        for x in branch: histogram[ihist].Fill(x)
-
-        histogram[ihist].SetLineColor(colors[ihist])
-        histogram[ihist].SetLineStyle(linestyles[ihist])
-        histogram[ihist].SetLineWidth(2)
-        histogram[ihist].Draw("SAME")
-        #histogram[ihist].Draw("E1P SAME")
-        if legends is not None and len(legends)>ihist and legends[ihist] != "None":
-            legend.AddEntry(histogram[ihist], legends[ihist], "l")
+        histogram.SetLineColor(color)
+        histogram.SetLineStyle(line_style)
+        histogram.SetLineWidth(2)
+        histogram.Draw("HIST SAME")
 
         # Axes title
-        if ihist == 0:
-            histogram[ihist].GetXaxis().SetTitle(replace_spaces(args.labelx))
-            histogram[ihist].GetYaxis().SetTitle(replace_spaces(args.labely))
+        histogram.GetXaxis().SetTitle(args.labelx)
+        histogram.GetYaxis().SetTitle(args.labely)
+
+
+        if args.ymax is not None and args.ymin is not None:
+            histogram.GetYaxis().SetRangeUser(args.ymin, args.ymax)
 
     if args.logscale:
         canvas.SetLogy()
 
-    legend.Draw("SAME")
+    if draw_legend:
+        legend.Draw("SAME")
     canvas.SaveAs(args.output)
+
+
+if __name__ == "__main__":
+    main()
+
