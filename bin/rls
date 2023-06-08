@@ -1,4 +1,11 @@
 #!/bin/bash
   
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-python ${script_dir}/../rootls/rootls.py "$@"
+
+old_pythonpath=${PYTHONPATH}
+parent_directory=$(echo ${script_dir} | rev | cut -d/ -f 2- | rev)
+
+export PYTHONPATH=${parent_directory}:${PYTHONPATH}
+python ${parent_directory}/rootls/rootls.py "$@"
+export PYTHONPATH=${old_pythonpath}
+
