@@ -1,74 +1,79 @@
 import uproot
 import argparse
 
-
-if (__name__ == "__main__"):
-    """
-    Return the number of events in a list of ROOT files.
-    Examples:
-    $ python nEvents -f file1.root,file2.root
-    $ python nEvents -f list.txt
-    where
-    $ cat list.txt
-    file1.root
-    file2.root
-
-    Depends on uproot.
-
-    """
+from helpers import generalUtilities as gUtl
 
 
-    ## Parse arguments
+def __get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-f", "--files",
         help="ROOT files separated by a comma \
+              or filename expansion, \
               or txt file with list of ROOT files.",
-        )
+    )
     parser.add_argument(
-        "-hr", "--humanReadable",
+        "-hr", "--human_readable",
         action="store_true",
         help="Number of events in a human readable format.",
-        )
+    )
     parser.add_argument(
         "-t", "--ttree",
         help="Name of the events TTree (or the TTree for which to get size). Default=Events.",
         default="Events",
-        )
+    )
+    parser.add_argument(
+        "-filter", "--filter",
+        help="Filter the array using the specified array. Example synthax: data.[\"branch_name\"]==1. No space allowed!",
+    )
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    # If list of ROOT files in txt file
-    if not args.files.endswith(".root"):
-        with open (args.files, "r") as txtfile:
-            rootFiles = txtfile.readlines()
-        rootFiles = [ x.replace("\n", "") for x in rootFiles ]
-    # Else we assume coma separated list of ROOT files
-    else:
-        rootFiles = args.files.split(",")
+
+def main():
+    """Return the number of events in a list of ROOT files.
+
+    Examples:
+    $ python nEvents -f file1.root,file2.root
+    $ python nEvents -f file{1..2}.root
+    $ python nEvents -f list.txt
+    $ cat list.txt
+    file1.root
+    file2.root
+    $ # the + can combine several syntaxes:
+    $ python nEvents -f list.txt+file{5..10}.root 
+    """
+
+    args = __get_arguments()
+
+    root_files = gUtl.make_file_list(args.files)
 
     # Counting number of events
-    nEvts = 0
-    for fileName in rootFiles:
-        file_ = uproot.open(fileName)
+    n_events = 0
+    for file_name in root_files:
+        file_ = uproot.open(file_name)
         events = file_[args.ttree]
         f0 = events.keys()[0]
-        nEvts += events[f0].num_entries
+        n_events += events[f0].num_entries
 
     # Human readable output
-    if args.humanReadable:
-        if nEvts < 1e3:
-            nEvtsStr = str(nEvts)
-        elif nEvts>= 1e3 and nEvts<1e6:
-            nEvtsStr = str(int(nEvts//1e3)) + "k"
-        elif nEvts>= 1e6 and nEvts<1e9:
-            nEvtsStr = str(int(nEvts//1e6)) + "M"
-        elif nEvts>= 1e9 and nEvts<1e12:
-            nEvtsStr = str(int(nEvts//1e9)) + "G"
+    if args.human_readable:
+        if n_events < 1e3:
+            n_events_str = str(n_events)
+        elif n_events>= 1e3 and n_events<1e6:
+            n_events_str = str(int(n_events//1e3)) + "k"
+        elif n_events>= 1e6 and n_events<1e9:
+            n_events_str = str(int(n_events//1e6)) + "M"
+        elif n_events>= 1e9 and n_events<1e12:
+            n_events_str = str(int(n_events//1e9)) + "G"
         else:
-            nEvtsStr = str(int(nEvts//1e12)) + "T"
+            n_events_str = str(int(n_events//1e12)) + "T"
     else:
-        nEvtsStr = str(nEvts)
+        n_events_str = str(n_events)
 
-    print(nEvtsStr)
+    print(n_events_str)
+
+
+if __name__ == "__main__":
+    main()
 
